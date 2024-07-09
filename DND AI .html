@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <base href="https://websim.ai" />
+    <title>Ejderha ve Zindanlar Alemi</title>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap");
+
+      body {
+        font-family: "MedievalSharp", cursive;
+        background-image: url("https://wallpapercave.com/wp/wp4325537.jpg");
+        background-size: cover;
+        background-attachment: fixed;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        color: #d4af37;
+      }
+      .container {
+        background-color: rgba(20, 20, 20, 0.8);
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+        padding: 20px;
+        width: 95%;
+        max-width: 1400px;
+        border: 2px solid #d4af37;
+        display: flex;
+        flex-direction: column;
+      }
+      .game-area {
+        display: flex;
+        gap: 20px;
+      }
+      .chat-area {
+        flex: 3; /* Increased from 2 to 3 to make chat area larger */
+      }
+      .side-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .stats-area,
+      .quest-area,
+      .journal-area {
+        background-color: rgba(30, 30, 30, 0.7);
+        border-radius: 10px;
+        padding: 15px;
+        border: 1px solid #d4af37;
+      }
+      .chat-box {
+        height: 600px; /* Increased from 400px to 600px */
+        overflow-y: auto;
+        border: 1px solid #d4af37;
+        padding: 10px;
+        margin-bottom: 20px;
+        background-color: rgba(30, 30, 30, 0.7);
+        scrollbar-width: thin;
+        scrollbar-color: #d4af37 #2c2c2c;
+      }
+      .chat-box::-webkit-scrollbar {
+        width: 8px;
+      }
+      .chat-box::-webkit-scrollbar-track {
+        background: #2c2c2c;
+      }
+      .chat-box::-webkit-scrollbar-thumb {
+        background-color: #d4af37;
+        border-radius: 20px;
+        border: 2px solid #2c2c2c;
+      }
+      .input-area {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      #user-input {
+        padding: 10px;
+        font-size: 16px;
+        background-color: #2c2c2c;
+        border: 1px solid #d4af37;
+        color: #d4af37;
+        font-family: "MedievalSharp", cursive;
+      }
+      #send-button,
+      .action-button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #d4af37;
+        color: #2c2c2c;
+        border: none;
+        cursor: pointer;
+        font-family: "MedievalSharp", cursive;
+        transition: all 0.3s ease;
+      }
+      #send-button:hover,
+      .action-button:hover {
+        background-color: #c19b2e;
+      }
+      .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .message {
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 18px;
+      }
+      .user {
+        background-color: rgba(212, 175, 55, 0.2);
+        text-align: right;
+        border-right: 3px solid #d4af37;
+      }
+      .gm {
+        background-color: rgba(70, 130, 180, 0.2);
+        border-left: 3px solid #4682b4;
+      }
+      .system {
+        background-color: rgba(178, 34, 34, 0.2);
+        font-style: italic;
+        text-align: center;
+        border: 1px dashed #b22222;
+      }
+      h1,
+      h2 {
+        text-align: center;
+        color: #d4af37;
+        text-shadow: 2px 2px 4px #000;
+      }
+      h1 {
+        font-size: 2.5em;
+      }
+      h2 {
+        font-size: 1.8em;
+      }
+        #dice-container {
+        font-size: 60px;
+        text-align: center;
+        margin-bottom: 20px;
+        cursor: pointer;
+      }
+
+      #dice {
+        display: inline-block;
+        transition: transform 0.5s ease, opacity 0.3s ease;
+        color: #d4af37;
+      }
+
+      #dice-container:hover #dice {
+        transform: scale(1.1);
+      }
+
+      #dice-container.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .stat {
+        margin-bottom: 10px;
+      }
+      .stat-name {
+        font-weight: bold;
+      }
+      .inventory-item,
+      .quest-item,
+      .journal-entry {
+        background-color: rgba(70, 130, 180, 0.1);
+        border: 1px solid #4682b4;
+        border-radius: 5px;
+        padding: 5px;
+        margin-bottom: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Ejderha ve Zindanlar Alemi</h1>
+      <div id="dice-container" title="İstendiğinde zar atmak için tıklayın">
+        <i id="dice" class="fas fa-dice-d20"></i>
+      </div>
+      <div class="game-area">
+        <div class="chat-area">
+          <div id="chat-box" class="chat-box"></div>
+          <div class="input-area">
+            <input
+              type="text"
+              id="user-input"
+              placeholder="Cesur maceracı, hareketini söyle..."
+            />
+            <button id="send-button">Gönder</button>
+            <div id="action-buttons" class="action-buttons"></div>
+          </div>
+        </div>
+        <div class="side-panel">
+          <div class="stats-area">
+            <h2>Kahraman Özellikleri</h2>
+            <div id="stats"></div>
+            <h2>Envanter</h2>
+            <div id="inventory"></div>
+          </div>
+          <div class="quest-area">
+            <h2>Görevler</h2>
+            <div id="quests"></div>
+          </div>
+          <div class="journal-area">
+            <h2>Günlük</h2>
+            <div id="journal"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+	  const diceContainer = document.getElementById("dice-container");
+      const chatBox = document.getElementById("chat-box");
+      const userInput = document.getElementById("user-input");
+      const sendButton = document.getElementById("send-button");
+      const diceElement = document.getElementById("dice");
+      const statsElement = document.getElementById("stats");
+      const inventoryElement = document.getElementById("inventory");
+      const questsElement = document.getElementById("quests");
+      const journalElement = document.getElementById("journal");
+      const actionButtonsElement = document.getElementById("action-buttons");
+
+      let playerState = {
+        health: 100,
+        mana: 50,
+        gold: 20,
+        stats: {
+          strength: 10,
+          dexterity: 8,
+          intelligence: 12,
+          charisma: 9,
+        },
+        inventory: [],
+        quests: [],
+        journal: [],
+      };
+
+      let turnCount = 0;
+      let journalEntryCount = 0;
+      let waitingForRoll = false;
+
+      let conversationHistory = [
+        {
+          role: "system",
+          content:
+            'Sen bir fantezi RPG\'sinde Dungeon mastersın. Karaktere uygun sekilde yanit ver, canli betimlemeler yap ve oyuncuyu macera boyunca yönlendir. Çok sıkıcı betimlemeler yapma braz hızlı ilerlesin. Uygun oldugunda seçenekler sun. bu seçenekleri oyunu betimlediğin mesajın içine yazma sakın. sadece jsonda actions kısmına yaz. Zar atılması istendiğinde veya gerektiğinde sen zar sonucunu söyleme. "zar at" metnini yazdığında kullanıcı 1 ile 20 arasında bir zar atacak ve sonucu o zaman göreceksin. Yanitlarin sonunda her zaman önerilen eylemler ve state degisiklikleri içeren bir JSON nesnesi ekle, inventorye eşya ekleyebilirsin görev alindiginda quests ekleyebilirsin ve kullanıcı /günlük yazdığında günlüğü json ile değiştir ve şu ana kadar olanları günlük şeklinde özetle json ile. su formatta: {"actions": ["Eylem 1", "Eylem 2", "Eylem 3", "Eylem 4"], "stateChanges": {"health": 90, "gold": 30}',
+        },
+      ];
+
+      function updatePlayerState() {
+        statsElement.innerHTML = `
+                <div class="stat"><span class="stat-name">Sağlık:</span> ${playerState.health}</div>
+                <div class="stat"><span class="stat-name">Mana:</span> ${playerState.mana}</div>
+                <div class="stat"><span class="stat-name">Altın:</span> ${playerState.gold}</div>
+                <div class="stat"><span class="stat-name">Güç:</span> ${playerState.stats.strength}</div>
+                <div class="stat"><span class="stat-name">Çeviklik:</span> ${playerState.stats.dexterity}</div>
+                <div class="stat"><span class="stat-name">Zeka:</span> ${playerState.stats.intelligence}</div>
+                <div class="stat"><span class="stat-name">Karizma:</span> ${playerState.stats.charisma}</div>
+            `;
+
+        inventoryElement.innerHTML = playerState.inventory
+          .map((item) => `<div class="inventory-item">${item}</div>`)
+          .join("");
+
+        questsElement.innerHTML = playerState.quests
+          .map((quest) => `<div class="quest-item">${quest}</div>`)
+          .join("");
+
+        journalElement.innerHTML = playerState.journal
+          .map((entry) => `<div class="journal-entry">${entry}</div>`)
+          .join("");
+      }
+
+      function addMessage(message, type, imageUrl = null) {
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("message", type);
+        messageElement.textContent = message;
+
+        chatBox.appendChild(messageElement);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function updateActionButtons(actions) {
+        actionButtonsElement.innerHTML = "";
+        actions.forEach((action) => {
+          const button = document.createElement("button");
+          button.textContent = action;
+          button.classList.add("action-button");
+          button.addEventListener("click", () => sendMessage(action));
+          actionButtonsElement.appendChild(button);
+        });
+      }
+
+      function rollDice() {
+        if (!waitingForRoll) return;
+
+        diceContainer.classList.add("disabled");
+        diceElement.style.transform = "rotate(360deg)";
+        
+        setTimeout(() => {
+          diceElement.style.transform = "rotate(0deg)";
+          diceContainer.classList.remove("disabled");
+        }, 500);
+
+        const rollResult = Math.floor(Math.random() * 20) + 1;
+        addMessage(`${rollResult} attın!`, "system");
+        waitingForRoll = false;
+        sendRollResultToGM(rollResult);
+      }
+
+      diceContainer.addEventListener("click", rollDice);
+
+      async function sendMessage(message = null) {
+        const userMessage = message || userInput.value.trim();
+        if (userMessage) {
+          addMessage(userMessage, "user");
+          userInput.value = "";
+
+          conversationHistory.push({
+            role: "user",
+            content: JSON.stringify({
+              message: userMessage,
+              playerState: playerState,
+            }),
+          });
+
+          try {
+            const response = await fetch(
+              "https://api.openai.com/v1/chat/completions",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization:
+                    "Bearer api",
+                },
+                body: JSON.stringify({
+                  model: "gpt-4o",
+                  messages: conversationHistory,
+                  max_tokens: 900,
+                }),
+              }
+            );
+            const data = await response.json();
+            let gmResponse = data.choices[0].message.content;
+
+            conversationHistory.push({
+              role: "assistant",
+              content: gmResponse,
+            });
+
+            const jsonMatch = gmResponse.match(/\{.*\}/s);
+            let parsedResponse = {};
+            if (jsonMatch) {
+              parsedResponse = JSON.parse(jsonMatch[0]);
+              gmResponse = gmResponse.replace(/\{.*\}/s, "").trim();
+            }
+
+            addMessage(gmResponse, "gm");
+
+            if (gmResponse.toLowerCase().includes("zar at")) {
+              waitingForRoll = true;
+              diceElement.classList.remove("disabled");
+              addMessage("Zar atmak için zara tıklayin!", "system");
+            }
+
+            if (parsedResponse.stateChanges) {
+              Object.assign(playerState, parsedResponse.stateChanges);
+            }
+
+            if (parsedResponse.inventory) {
+              playerState.inventory = parsedResponse.inventory;
+            }
+
+            updatePlayerState();
+
+            if (parsedResponse.actions) {
+              updateActionButtons(parsedResponse.actions);
+            }
+
+          } catch (error) {
+            console.error("Hata:", error);
+            addMessage(
+              "Karanlik bir güç müdahale etti. Lütfen tekrar deneyin.",
+              "system"
+            );
+          }
+        }
+      }
+
+      async function sendRollResultToGM(rollResult) {
+        try {
+          conversationHistory.push({
+            role: "user",
+            content: JSON.stringify({
+              message: `Zar atma sonucu: ${rollResult}`,
+              playerState: playerState,
+            }),
+          });
+
+          const response = await fetch(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization:
+                  "Bearer api",
+              },
+              body: JSON.stringify({
+                model: "gpt-4o",
+                messages: conversationHistory,
+                max_tokens: 900,
+              }),
+            }
+          );
+          const data = await response.json();
+          let gmResponse = data.choices[0].message.content;
+
+          conversationHistory.push({ role: "assistant", content: gmResponse });
+
+          const jsonMatch = gmResponse.match(/\{.*\}/s);
+          let parsedResponse = {};
+          if (jsonMatch) {
+            parsedResponse = JSON.parse(jsonMatch[0]);
+            gmResponse = gmResponse.replace(/\{.*\}/s, "").trim();
+          }
+
+          const imageUrl =
+            "https://via.placeholder.com/400x200?text=Sahne+Görseli";
+
+          addMessage(gmResponse, "gm", imageUrl);
+
+          if (parsedResponse.stateChanges) {
+            Object.assign(playerState, parsedResponse.stateChanges);
+          }
+
+          if (parsedResponse.inventory) {
+            playerState.inventory = parsedResponse.inventory;
+          }
+
+          updatePlayerState();
+
+          if (parsedResponse.actions) {
+            updateActionButtons(parsedResponse.actions);
+          }
+        } catch (error) {
+          console.error("Hata:", error);
+          addMessage(
+            "Oyun Yöneticisi geçici olarak dikkati dağıldı. Lütfen bekleyin.",
+            "system"
+          );
+        }
+      }
+
+      async function summarizeAndAddToJournal() {
+        try {
+          const response = await fetch(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization:
+                  "Bearer api",
+              },
+              body: JSON.stringify({
+                model: "gpt-4o",
+                messages: [
+                  {
+                    role: "system",
+                    content:
+                      "Maceradaki son olayları özet bir günlük girdisi olarak özetle.",
+                  },
+                  {
+                    role: "user",
+                    content: Array.from(chatBox.children)
+                      .map((msg) => msg.textContent)
+                      .join("\n"),
+                  },
+                ],
+                max_tokens: 400,
+              }),
+            }
+          );
+          const data = await response.json();
+          const summary = data.choices[0].message.content;
+          //playerState.journal.push(summary);
+          //journalEntryCount++;
+
+          //if (journalEntryCount % 10 === 0) {
+            //summarizeJournal();
+          //}
+
+          updatePlayerState();
+        } catch (error) {
+          console.error("Sohbeti özetleme hatası:", error);
+        }
+      }
+
+      async function summarizeJournal() {
+        try {
+          const response = await fetch(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization:
+                  "Bearer api",
+              },
+              body: JSON.stringify({
+                model: "gpt-4o",
+                messages: [
+                  {
+                    role: "system",
+                    content:
+                      "Tüm günlüğü şimdiye kadarki maceranın özet bir genel bakışı olarak özetle.",
+                  },
+                  { role: "user", content: playerState.journal.join("\n") },
+                ],
+                max_tokens: 500,
+              }),
+            }
+          );
+          const data = await response.json();
+          const summary = data.choices[0].message.content;
+          playerState.journal = [summary];
+          updatePlayerState();
+        } catch (error) {
+          console.error("Günlüğü özetleme hatası:", error);
+        }
+      }
+
+      sendButton.addEventListener("click", () => sendMessage());
+      userInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          sendMessage();
+        }
+      });
+      diceElement.addEventListener("click", rollDice);
+
+      // Initial setup
+      updatePlayerState();
+      //sendMessage("Maceramız başlasın!"); // This will trigger the initial GM message and scene
+    </script>
+  </body>
+</html>
